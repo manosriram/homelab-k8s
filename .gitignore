@@ -1,0 +1,11 @@
+# Secret files containing sensitive data - DO NOT COMMIT
+**/secret.yml
+**/secrets.yml
+
+# Immich secrets (already split)
+immich/secret.yml
+
+# Environment files
+**/.env
+**/.env.local
+**/.env.*.local

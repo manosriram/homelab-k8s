@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gatus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gatus
+  template:
+    metadata:
+      labels:
+        app: gatus
+    spec:
+      containers:
+        - name: gatus
+          image: twinproduction/gatus:latest
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - secretRef:
+                name: gatus-env
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: config
+          hostPath:
+            path: /fs/lab/data/gatus/config
+            type: Directory
+        - name: data
+          hostPath:
+            path: /fs/lab/data/gatus
+            type: DirectoryOrCreate

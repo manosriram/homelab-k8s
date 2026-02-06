@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: linkding
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: linkding
+  template:
+    metadata:
+      labels:
+        app: linkding
+    spec:
+      containers:
+      - name: linkding
+        image: sissbruecker/linkding:latest
+        volumeMounts:
+        - mountPath: /etc/linkding/data
+          name: data
+      volumes:
+      - name: data
+        hostPath:
+          path: /fs/lab/data/linkding
+          type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: linkding
+spec:
+  type: NodePort
+  selector:
+    app: linkding
+  ports:
+    - name: http
+      port: 9902
+      targetPort: 9090
+      nodePort: 30909

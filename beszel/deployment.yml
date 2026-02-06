@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: beszel
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: beszel
+  template:
+    metadata:
+      labels:
+        app: beszel
+    spec:
+      hostNetwork: true
+      containers:
+      - name: beszel
+        image: henrygd/beszel
+        ports:
+        - containerPort: 8090
+        volumeMounts:
+        - mountPath: /beszel_data
+          name: data
+      - name: beszel-agent
+        image: henrygd/beszel-agent
+        volumeMounts:
+        - mountPath: /var/run/docker.sock
+          name: docker-sock
+          readOnly: true
+        - mountPath: /var/lib/beszel-agent
+          name: agent-data
+        env:
+        - name: LISTEN
+          value: "45876"
+        - name: KEY
+          valueFrom:
+            secretKeyRef:
+              name: beszel-secret
+              key: KEY
+        - name: TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: beszel-secret
+              key: TOKEN
+        - name: HUB_URL
+          value: "http://100.69.69.69:8090"
+      volumes:
+      - name: data
+        hostPath:
+          path: /fs/lab/data/beszel
+          type: Directory
+      - name: docker-sock
+        hostPath:
+          path: /var/run/docker.sock
+          type: Socket
+      - name: agent-data
+        hostPath:
+          path: /fs/lab/data/beszel/agent
+          type: Directory
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: beszel
+spec:
+  type: NodePort
+  selector:
+    app: beszel
+  ports:
+    - name: http
+      port: 8090
+      targetPort: 8090
+      nodePort: 30899

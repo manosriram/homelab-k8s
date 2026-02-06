@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kakeibo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kakeibo
+  template:
+    metadata:
+      labels:
+        app: kakeibo
+    spec:
+      containers:
+      - name: kakeibo
+        image: ghcr.io/manosriram/kakeibo:latest
+        env:
+        - name: QDRANT_URL
+          value: http://qdrant.default.svc.cluster.local:6333
+        - name: QDRANT_GRPC_URL
+          value: qdrant.default.svc.cluster.local:6334
+        volumeMounts:
+        - mountPath: /data
+          name: data
+        - mountPath: /qdrant/storage
+          name: qdrant
+      volumes:
+      - name: data
+        hostPath:
+          path: /fs/lab/data/kakeibo
+      - name: qdrant
+        hostPath:
+          path: /fs/lab/data/kakeibo/qdrant
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: qdrant
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: qdrant
+  template:
+    metadata:
+      labels:
+        app: qdrant
+    spec:
+      containers:
+      - name: qdrant
+        image: qdrant/qdrant:v1.13.2
+        ports:
+        - name: http
+          containerPort: 6333
+        - name: grpc
+          containerPort: 6334
+        volumeMounts:
+        - mountPath: /qdrant/storage
+          name: qdrant-storage
+      volumes:
+      - name: qdrant-storage
+        hostPath:
+          path: /fs/lab/data/kakeibo/qdrant
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: qdrant
+spec:
+  selector:
+    app: qdrant
+  ports:
+  - name: http
+    port: 6333
+    targetPort: 6333
+  - name: grpc
+    port: 6334
+    targetPort: 6334
