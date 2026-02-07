@@ -63,19 +63,3 @@ spec:
       - name: qdrant-storage
         hostPath:
           path: /fs/lab/data/kakeibo/qdrant
-
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: qdrant
-spec:
-  selector:
-    app: qdrant
-  ports:
-  - name: http
-    port: 6333
-    targetPort: 6333
-  - name: grpc
-    port: 6334
-    targetPort: 6334

@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: immich-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: immich-server
+  template:
+    metadata:
+      labels:
+        app: immich-server
+    spec:
+      containers:
+        - name: immich-server
+          image: ghcr.io/immich-app/immich-server:v2.3.1
+          env:
+            - name: TZ
+              valueFrom:
+                configMapKeyRef:
+                  name: immich-config
+                  key: TZ
+            - name: DB_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: immich-config
+                  key: DB_USERNAME
+            - name: DB_DATABASE_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: immich-config
+                  key: DB_DATABASE_NAME
+            - name: DB_HOSTNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: immich-config
+                  key: DB_HOSTNAME
+            - name: DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: immich-config
+                  key: DB_PORT
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: immich-db-secret
+                  key: DB_PASSWORD
+            - name: REDIS_HOSTNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: immich-config
+                  key: REDIS_HOSTNAME
+            - name: REDIS_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: immich-config
+                  key: REDIS_PORT
+            - name: IMMICH_MACHINE_LEARNING_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: immich-config
+                  key: IMMICH_MACHINE_LEARNING_URL
+          ports:
+            - containerPort: 2283
+          volumeMounts:
+            - name: upload
+              mountPath: /usr/src/app/upload
+            - name: localtime
+              mountPath: /etc/localtime
+              readOnly: true
+          livenessProbe:
+            httpGet:
+              path: /api/server/ping
+              port: 2283
+            initialDelaySeconds: 120
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          resources:
+            limits:
+              cpu: "2"
+              memory: "4096Mi"
+      volumes:
+        - name: upload
+          hostPath:
+            path: /fs/lab/data/immich/media
+            type: DirectoryOrCreate
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+            type: File

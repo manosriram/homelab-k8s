@@ -1,4 +1,5 @@
 # Secret files containing sensitive data - DO NOT COMMIT
+**/*.configmap.yml
 **/secret.yml
 **/secrets.yml
 
