@@ -12,23 +12,34 @@ spec:
       labels:
         app: kakeibo
     spec:
+      initContainers:
+      - name: wait-for-qdrant
+        image: busybox:1.36
+        command: ['sh', '-c', 'until nc -z qdrant-server 6333; do echo "Waiting for qdrant..."; sleep 5; done; echo "Qdrant is ready!"']
       containers:
       - name: kakeibo
         image: ghcr.io/manosriram/kakeibo:latest
-        env:
-        - name: QDRANT_URL
-          value: http://qdrant.default.svc.cluster.local:6333
-        - name: QDRANT_GRPC_URL
-          value: qdrant.default.svc.cluster.local:6334
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - secretRef:
+            name: kakeibo-secret
         volumeMounts:
         - mountPath: /data
           name: data
         - mountPath: /qdrant/storage
           name: qdrant
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            memory: 256Mi
       volumes:
       - name: data
         hostPath:
-          path: /fs/lab/data/kakeibo
+          path: /fs/lab/data/kakeibo/data
       - name: qdrant
         hostPath:
           path: /fs/lab/data/kakeibo/qdrant
@@ -59,6 +70,24 @@ spec:
         volumeMounts:
         - mountPath: /qdrant/storage
           name: qdrant-storage
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 6333
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 6333
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        resources:
+          requests:
+            cpu: 250m
+            memory: 512Mi
+          limits:
+            memory: 512Mi
       volumes:
       - name: qdrant-storage
         hostPath:

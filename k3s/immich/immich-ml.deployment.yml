@@ -26,6 +26,12 @@ spec:
           volumeMounts:
             - name: ml-cache
               mountPath: /cache
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "2Gi"
+            limits:
+              memory: "2Gi"
       volumes:
         - name: ml-cache
           hostPath:

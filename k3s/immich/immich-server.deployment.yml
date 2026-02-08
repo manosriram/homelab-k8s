@@ -78,8 +78,10 @@ spec:
             timeoutSeconds: 10
             failureThreshold: 3
           resources:
+            requests:
+              cpu: "1000m"
+              memory: "4096Mi"
             limits:
-              cpu: "2"
               memory: "4096Mi"
       volumes:
         - name: upload

@@ -21,6 +21,12 @@ spec:
         volumeMounts:
         - mountPath: /beszel_data
           name: data
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            memory: 256Mi
       - name: beszel-agent
         image: henrygd/beszel-agent
         volumeMounts:
@@ -44,6 +50,12 @@ spec:
               key: TOKEN
         - name: HUB_URL
           value: "http://100.69.69.69:8090"
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            memory: 256Mi
       volumes:
       - name: data
         hostPath:

@@ -37,9 +37,11 @@ spec:
             timeoutSeconds: 5
             failureThreshold: 3
           resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
             limits:
               memory: "512Mi"
-              cpu: "500m"
       volumes:
         - name: downloads
           hostPath:

@@ -55,6 +55,12 @@ spec:
             timeoutSeconds: 3
             successThreshold: 1
             failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 256Mi
       volumes:
         - name: cfg
           hostPath:
