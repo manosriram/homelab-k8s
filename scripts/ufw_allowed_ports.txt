@@ -1,0 +1,79 @@
+# Bazarr
+6767
+
+# Deluge
+8112
+6881
+6881/udp
+58846
+
+# Filestash
+8334
+
+# Flaresolverr
+8191
+
+# Heimdall
+8082
+
+# Immich
+2283
+
+# Jellyfin
+8096
+8920
+7359/udp
+1900/udp
+
+# Nginx Proxy Manager
+80
+81
+443
+
+# Ntfy
+9030
+
+# Portainer
+9443
+9000
+
+# Prowlarr
+9696
+
+# Radarr
+7878
+
+# Sonarr
+8989
+
+# TubeArchivist
+8040
+6379
+9200
+
+# Uptime Kuma
+3001
+
+# Vaultwarden
+8060
+
+# Gitea
+9088
+
+# Gatus
+9900
+
+# Linkding
+9902
+
+# Jellyseer
+5055
+
+# ttyd
+7681
+
+# Syncthing
+8384
+
+# Miniflux
+9908

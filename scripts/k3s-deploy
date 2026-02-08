@@ -1,0 +1,132 @@
+#!/usr/bin/env python3
+"""
+Kubernetes deployment script for managing k3s resources.
+Supports deploying and deleting Kubernetes manifests recursively.
+"""
+
+import argparse
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+
+def find_manifests(directory: str) -> list:
+    """Recursively find all Kubernetes manifest files."""
+    manifests = []
+    base_path = Path(directory)
+    
+    if not base_path.exists():
+        print(f"Error: Directory {directory} does not exist")
+        sys.exit(1)
+    
+    for ext in ['*.yaml', '*.yml']:
+        manifests.extend(base_path.rglob(ext))
+    
+    return sorted(manifests)
+
+
+def kubectl_apply(manifest: Path, namespace: str = None) -> bool:
+    """Apply a Kubernetes manifest."""
+    cmd = ['kubectl', 'apply']
+    if namespace:
+        cmd.extend(['-n', namespace])
+    cmd.extend(['-f', str(manifest)])
+    
+    print(f"Applying: {manifest}")
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    
+    if result.returncode != 0:
+        print(f"Error applying {manifest}: {result.stderr}")
+        return False
+    
+    print(result.stdout)
+    return True
+
+
+def kubectl_delete(manifest: Path, namespace: str = None) -> bool:
+    """Delete a Kubernetes manifest."""
+    cmd = ['kubectl', 'delete']
+    if namespace:
+        cmd.extend(['-n', namespace])
+    cmd.extend(['-f', str(manifest)])
+    
+    print(f"Deleting: {manifest}")
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    
+    if result.returncode != 0:
+        print(f"Error deleting {manifest}: {result.stderr}")
+        return False
+    
+    print(result.stdout)
+    return True
+
+
+def deploy(directory: str, namespace: str = None) -> bool:
+    """Deploy all manifests from directory."""
+    manifests = find_manifests(directory)
+    
+    if not manifests:
+        print(f"No manifest files found in {directory}")
+        return False
+    
+    print(f"Found {len(manifests)} manifest(s) to deploy")
+    success = True
+    
+    for manifest in manifests:
+        if not kubectl_apply(manifest, namespace):
+            success = False
+    
+    return success
+
+
+def delete(directory: str, namespace: str = None) -> bool:
+    """Delete all manifests from directory."""
+    manifests = find_manifests(directory)
+    
+    if not manifests:
+        print(f"No manifest files found in {directory}")
+        return False
+    
+    print(f"Found {len(manifests)} manifest(s) to delete")
+    success = True
+    
+    # Delete in reverse order for proper cleanup
+    for manifest in reversed(manifests):
+        if not kubectl_delete(manifest, namespace):
+            success = False
+    
+    return success
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description='Deploy or delete Kubernetes manifests from a directory'
+    )
+    parser.add_argument(
+        'action',
+        choices=['deploy', 'delete'],
+        help='Action to perform: deploy or delete'
+    )
+    parser.add_argument(
+        '-d', '--directory',
+        default='/fs/lab/k3s',
+        help='Directory containing Kubernetes manifests (default: /fs/lab/k3s)'
+    )
+    parser.add_argument(
+        '-n', '--namespace',
+        help='Kubernetes namespace to use'
+    )
+    
+    args = parser.parse_args()
+    
+    if args.action == 'deploy':
+        success = deploy(args.directory, args.namespace)
+    else:
+        success = delete(args.directory, args.namespace)
+    
+    sys.exit(0 if success else 1)
+
+
+if __name__ == '__main__':
+    main()

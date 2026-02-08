@@ -1,0 +1,167 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+import logging
+import subprocess
+from pathlib import Path
+from typing import List
+
+# --- Configuration ---
+# Use Path for robust path handling and default to a standard root
+SERVICE_ROOT_DIR = Path(os.environ.get("SERVICE_ROOT_DIR", "/fs/containers/docker-compose/"))
+
+# Process disabled paths: Convert environment list to a set of Path objects for fast and robust checking
+# All paths in DISABLED_SERVICE_PATHS are absolute and normalized.
+disabled_paths_env = os.environ.get("DISABLED_SERVICE_PATHS", "").split()
+DISABLED_SERVICE_PATHS = {
+    Path(p.rstrip("/")) for p in disabled_paths_env if p.strip()
+}
+
+COMPOSE_FILE_NAMES = ['docker-compose.yml', 'compose.yml']
+
+# --- Setup Logging ---
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(levelname)s: %(message)s'
+)
+
+def run_compose_up(compose_file: Path):
+    """
+    Runs 'docker compose up' for a given compose file.
+    Changes the CWD to the file's directory for correct path resolution.
+    """
+    compose_dir = compose_file.parent
+
+    # Change directory to the location of the compose file to ensure
+    # build contexts and volume paths are resolved correctly relative to the file.
+    try:
+        os.chdir(compose_dir)
+    except OSError as e:
+        logging.error(f"Failed to change directory to {compose_dir}: {e}")
+        return
+
+    pull_latest_image = [
+        'docker',
+        'compose',
+        '-f', str(compose_file.resolve()),
+        'pull',
+    ]
+
+    # Passing the absolute path via -f is still the most explicit and reliable way.
+    command = [
+        'docker',
+        'compose',
+        '-f', str(compose_file.resolve()),
+        'up',
+        '-d',
+        '--remove-orphans',
+        '--build'
+    ]
+
+    relative_path = compose_file.relative_to(SERVICE_ROOT_DIR)
+    logging.info(f"--- Deploying: {relative_path} (CWD: {compose_dir.name}) ---")
+
+    try:
+        # check=True will raise CalledProcessError on non-zero exit code
+        # capture_output=True keeps the script's output clean unless an error occurs
+        subprocess.run(
+            pull_latest_image,
+            check=True,
+            capture_output=True,
+            text=True
+        )
+        subprocess.run(
+            command,
+            check=True,
+            capture_output=True,
+            text=True
+        )
+        logging.info(f"SUCCESS: {relative_path} deployed.")
+
+    except subprocess.CalledProcessError as e:
+        logging.error(f"FAILURE: Failed to deploy {relative_path}")
+        # Only print stderr if the error is significant
+        if e.stderr:
+            logging.error(f"  > Stderr: {e.stderr.strip()}")
+    except FileNotFoundError:
+        # Catches error if 'docker' command is not found
+        logging.critical("FAILURE: 'docker' or 'docker compose' command not found. Is Docker installed?")
+
+
+def main():
+    """
+    Main execution function. Finds and deploys all services, or a single service
+    if a directory path (relative to SERVICE_ROOT_DIR) is provided as a
+    command-line argument.
+    """
+    if not SERVICE_ROOT_DIR.is_dir():
+        logging.error(f"Service root directory not found: {SERVICE_ROOT_DIR}")
+        sys.exit(1)
+
+    # Save initial directory to restore it later
+    original_cwd = Path.cwd()
+
+    dirs_to_process: List[Path] = []
+
+    if len(sys.argv) > 1:
+        # 1. Argument provided: process only the specified directory.
+        target_name = sys.argv[1]
+        # Assume the argument is a directory name or path relative to SERVICE_ROOT_DIR
+        target_dir = SERVICE_ROOT_DIR / target_name
+
+        logging.info(f"Targeting specific service directory: {target_dir}")
+
+        if not target_dir.is_dir():
+            logging.error(f"Provided path is not a directory or does not exist: {target_dir}")
+            sys.exit(1)
+
+        dirs_to_process.append(target_dir)
+
+    else:
+        # 2. No argument: process all top-level service directories.
+        logging.info(f"Scanning all top-level service directories in {SERVICE_ROOT_DIR}...")
+
+        # Find all top-level service directories (e.g., /fs/containers/docker-compose/a, /fs/containers/docker-compose/b)
+        top_level_services: List[Path] = [d for d in SERVICE_ROOT_DIR.iterdir() if d.is_dir()]
+
+        if not top_level_services:
+            logging.info(f"No service directories found in {SERVICE_ROOT_DIR}")
+            sys.exit(0)
+
+        # Filter out disabled services and prepare the list for processing
+        for service_dir in top_level_services:
+            # Check if the top-level service path is disabled
+            if service_dir in DISABLED_SERVICE_PATHS:
+                logging.info(f"Skipping disabled service root: {service_dir.name}")
+            else:
+                dirs_to_process.append(service_dir)
+
+    if not dirs_to_process:
+        logging.warning("No directories eligible for deployment found.")
+        sys.exit(0)
+
+    # Deployment logic: loop over the selected (or all) directories
+    for service_dir in dirs_to_process:
+
+        all_compose_files: List[Path] = []
+
+        # Recursively find ALL instances of compose files within the service directory.
+        # This ensures nested compose files are still found even when targeting a single root.
+        for name in COMPOSE_FILE_NAMES:
+            all_compose_files.extend(list(service_dir.rglob(name)))
+
+        if not all_compose_files:
+            logging.warning(f"No compose files found recursively in {service_dir.name}")
+            continue
+
+        # Process each unique compose file found
+        for compose_file in all_compose_files:
+            run_compose_up(compose_file)
+
+    # Restore the original working directory
+    os.chdir(original_cwd)
+    logging.info("Deployment script finished.")
+
+if __name__ == "__main__":
+    main()

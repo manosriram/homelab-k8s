@@ -62,7 +62,7 @@ spec:
             type: DirectoryOrCreate
         - name: drive
           hostPath:
-            path: /fs/lab/data/copyparty/drive
+            path: /fs/backups/warm/copyparty-drive
             type: DirectoryOrCreate
         - name: media
           hostPath:
