@@ -80,7 +80,7 @@ Health monitoring is handled externally by **Cronicle** which pings **healthchec
 
 - **Ping Interval**: Every 10 minutes
 - **Grace Period**: 15 minutes (if no ping received)
-- **Notifications**: Sent to Discord channel after grace period expires
+- **Notifications**: Sent to Discord and Email after grace period expires
 
 ## Backup Strategy
 
@@ -91,9 +91,8 @@ Backups are scheduled via **Cronicle** and stored in **Backblaze B2**:
 
 **Backup Flow:**
 1. Cronicle triggers backup jobs on the schedule
-2. Data is snapshotted from `/fs/lab/data/`, `/fs/media/`, and `/fs/backups/`
-3. Snapshots are uploaded to Backblaze B2
-4. Retention policy automatically prunes old backups
+2. Snapshots are uploaded to Backblaze B2
+3. Retention policy automatically prunes old backups
 
 ## Storage Architecture
 
@@ -119,13 +118,6 @@ All applications use **hostPath** volumes mounted from the host filesystem:
     └── cold/          # Archival storage
         └── movies/
 ```
-
-## Networking
-
-- **Service Type**: NodePort for external access
-- **Namespace**: Default (no explicit namespace defined)
-- **VPN**: Tailscale integration (100.69.69.x range)
-- **Internal DNS**: Services communicate via ClusterIP (e.g., `qdrant.default.svc.cluster.local`)
 
 ## Deployment
 
@@ -163,12 +155,9 @@ kubectl apply -f k3s/ --recursive
 # Or apply specific application only
 kubectl apply -f k3s/immich/
 
-# Verify deployments
-kubectl get deployments
-kubectl get services
-
-# Check pod status
-kubectl get pods -o wide
+# Or simply use scripts/k3s-deploy.sh
+cp k3s-deploy /usr/local/bin;
+k3s-deploy -d <dir> -n <namespace> deploy|delete
 ```
 
 ### Updating Deployments
@@ -183,33 +172,3 @@ kubectl rollout restart deployment/<deployment-name>
 # View rollout status
 kubectl rollout status deployment/<deployment-name>
 ```
-
-### Troubleshooting
-
-```bash
-# Check pod logs
-kubectl logs <pod-name>
-
-# Follow logs in real-time
-kubectl logs -f <pod-name>
-
-# Describe pod for events and issues
-kubectl describe pod <pod-name>
-
-# Check node resources
-kubectl top node
-
-# Check pod resources
-kubectl top pod
-
-# Access a pod shell
-kubectl exec -it <pod-name> -- /bin/sh
-```
-
-## Notes
-
-- Single-node k3s cluster - no high availability
-- All data persisted via hostPath volumes
-- Backups are handled externally by Cronicle, not Kubernetes CronJobs
-- Health checks configured in deployment manifests (liveness/readiness probes)
-- Update secrets by copying `secret.example.yml` to `secret.yml` and filling in values before deployment
