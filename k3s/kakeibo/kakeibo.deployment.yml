@@ -30,12 +30,6 @@ spec:
           name: data
         - mountPath: /qdrant/storage
           name: qdrant
-        resources:
-          requests:
-            cpu: 100m
-            memory: 256Mi
-          limits:
-            memory: 256Mi
       volumes:
       - name: data
         hostPath:
@@ -83,9 +77,6 @@ spec:
           initialDelaySeconds: 60
           periodSeconds: 30
         resources:
-          requests:
-            cpu: 250m
-            memory: 512Mi
           limits:
             memory: 512Mi
       volumes:

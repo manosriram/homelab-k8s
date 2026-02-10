@@ -22,9 +22,6 @@ spec:
         - mountPath: /beszel_data
           name: data
         resources:
-          requests:
-            cpu: 100m
-            memory: 256Mi
           limits:
             memory: 256Mi
       - name: beszel-agent
@@ -52,9 +49,6 @@ spec:
           value: "http://100.69.69.69:8090"
         resources:
           requests:
-            cpu: 100m
-            memory: 256Mi
-          limits:
             memory: 256Mi
       volumes:
       - name: data

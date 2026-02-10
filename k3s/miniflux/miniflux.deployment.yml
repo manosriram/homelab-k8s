@@ -46,10 +46,8 @@ spec:
             periodSeconds: 10
           resources:
             requests:
-              cpu: "500m"
-              memory: "1Gi"
-            limits:
-              memory: "1Gi"
+              cpu: 500m
+              memory: 500Mi
       volumes:
         - name: postgres-data
           hostPath:
@@ -137,6 +135,4 @@ spec:
           resources:
             requests:
               cpu: 100m
-              memory: 256Mi
-            limits:
               memory: 256Mi

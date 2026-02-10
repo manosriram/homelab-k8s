@@ -22,8 +22,6 @@ spec:
           requests:
             cpu: 100m
             memory: 256Mi
-          limits:
-            memory: 256Mi
       volumes:
       - name: data
         hostPath:

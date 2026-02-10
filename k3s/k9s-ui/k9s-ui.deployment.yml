@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k9s-ui
+  namespace: default
+  labels:
+    app: k9s-ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: k9s-ui
+  template:
+    metadata:
+      labels:
+        app: k9s-ui
+    spec:
+      serviceAccountName: k9s-ui
+      containers:
+      - name: k9s
+        image: tsl0922/ttyd:alpine
+        env:
+        - name: TERM
+          value: xterm-256color
+        stdin: true
+        tty: true
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          apk add --no-cache curl util-linux && \
+          curl -LO https://github.com/derailed/k9s/releases/latest/download/k9s_Linux_amd64.tar.gz && \
+          tar -xzf k9s_Linux_amd64.tar.gz && \
+          mv k9s /usr/local/bin/ && \
+          chmod +x /usr/local/bin/k9s && \
+          echo '#!/bin/sh' > /usr/local/bin/k9s-wrapper.sh && \
+          echo 'script -qec "/usr/local/bin/k9s" /dev/null' >> /usr/local/bin/k9s-wrapper.sh && \
+          chmod +x /usr/local/bin/k9s-wrapper.sh && \
+          ttyd --writable -p 7681 -t enableZmodem=true -t enableSixel=true /usr/local/bin/k9s-wrapper.sh
+        ports:
+        - containerPort: 7681
+        resources:
+          limits:
+            memory: 512Mi
+            cpu: 500m
