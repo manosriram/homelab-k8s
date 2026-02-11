@@ -106,6 +106,7 @@ All applications use **hostPath** volumes mounted from the host filesystem:
 │       ├── immich/
 │       ├── jellyfin/
 │       ├── vaultwarden/
+│       ├── k9s-ui/
 │       ├── syncthing/
 │       ├── miniflux/
 │       ├── linkding/
